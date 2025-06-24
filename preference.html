@@ -159,6 +159,10 @@
                     Response A is better
                 </label>
                 <label>
+                    <input type="radio" name="preference" value="Draw" required>
+                    It's a Draw
+                </label>
+                <label>
                     <input type="radio" name="preference" value="B" required>
                     Response B is better
                 </label>
@@ -179,172 +183,168 @@
         </div>
     </section>
 
-<script>
-    // --- State variables ---
-    let csvData = [];
-    let results = [];
-    let currentIndex = 0;
-    let inputFilename = ''; // NEW: State variable to store the uploaded file's name
+    <script>
+        // --- State variables ---
+        let csvData = [];
+        let results = [];
+        let currentIndex = 0;
+        let inputFilename = ''; 
 
-    // --- DOM element references ---
-    const uploaderSection = document.getElementById('uploader-section');
-    const mainContent = document.getElementById('main-content');
-    const resultsSection = document.getElementById('results-section');
-    const fileInput = document.getElementById('csv-file-input');
-    const submitButton = document.getElementById('submit-button');
-    const downloadButton = document.getElementById('download-button');
-    const preferenceForm = document.getElementById('preference-form');
-    const progressIndicator = document.getElementById('progress-indicator');
-    const promptText = document.getElementById('prompt-text');
-    const responseAText = document.getElementById('response-a-text');
-    const responseBText = document.getElementById('response-b-text');
-    const resultsCsvTextarea = document.getElementById('results-csv');
+        // --- DOM element references ---
+        const uploaderSection = document.getElementById('uploader-section');
+        const mainContent = document.getElementById('main-content');
+        const resultsSection = document.getElementById('results-section');
+        const fileInput = document.getElementById('csv-file-input');
+        const submitButton = document.getElementById('submit-button');
+        const downloadButton = document.getElementById('download-button');
+        const preferenceForm = document.getElementById('preference-form');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const promptText = document.getElementById('prompt-text');
+        const responseAText = document.getElementById('response-a-text');
+        const responseBText = document.getElementById('response-b-text');
+        const resultsCsvTextarea = document.getElementById('results-csv');
 
-    // --- Event Listeners ---
-    fileInput.addEventListener('change', handleFileSelect);
-    submitButton.addEventListener('click', handleSubmission);
-    downloadButton.addEventListener('click', handleDownload);
+        // --- Event Listeners ---
+        fileInput.addEventListener('change', handleFileSelect);
+        submitButton.addEventListener('click', handleSubmission);
+        downloadButton.addEventListener('click', handleDownload);
 
-    // --- Functions ---
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        // --- Functions ---
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        inputFilename = file.name; // ADDED: Store the name of the uploaded file
+            inputFilename = file.name; 
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            try {
-                const parsed = parseCSV(text);
-                if (parsed.length < 2) throw new Error("CSV has no data rows.");
-                
-                csvData = parsed.slice(1);
-                results = [];
-                currentIndex = 0;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                try {
+                    const parsed = parseCSV(text);
+                    if (parsed.length < 2) throw new Error("CSV has no data rows.");
+                    
+                    csvData = parsed.slice(1);
+                    results = [];
+                    currentIndex = 0;
 
-                displayRow(currentIndex);
-                uploaderSection.style.display = 'none';
-                resultsSection.style.display = 'none';
-                mainContent.style.display = 'block';
-            } catch (error) {
-                alert(`Error parsing CSV file: ${error.message}`);
-                fileInput.value = ''; // Reset file input
+                    displayRow(currentIndex);
+                    uploaderSection.style.display = 'none';
+                    resultsSection.style.display = 'none';
+                    mainContent.style.display = 'block';
+                } catch (error) {
+                    alert(`Error parsing CSV file: ${error.message}`);
+                    fileInput.value = ''; 
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleSubmission() {
+            const selectedRadio = preferenceForm.querySelector('input[name="preference"]:checked');
+            if (!selectedRadio) {
+                alert('Please select an option.');
+                return;
             }
-        };
-        reader.readAsText(file);
-    }
+            const selectedValue = selectedRadio.value;
 
-    function handleSubmission() {
-        const selectedRadio = preferenceForm.querySelector('input[name="preference"]:checked');
-        if (!selectedRadio) {
-            alert('Please select either Response A or Response B.');
-            return;
-        }
-        const selectedValue = selectedRadio.value;
+            const currentItem = csvData[currentIndex];
+            results.push({
+                prompt: currentItem[0],
+                response_a: currentItem[1],
+                response_b: currentItem[2],
+                winner: selectedValue
+            });
 
-        const currentItem = csvData[currentIndex];
-        results.push({
-            prompt: currentItem[0],
-            response_a: currentItem[1],
-            response_b: currentItem[2],
-            winner: selectedValue
-        });
+            currentIndex++;
 
-        currentIndex++;
-
-        if (currentIndex < csvData.length) {
-            displayRow(currentIndex);
-        } else {
-            showResults();
-        }
-    }
-
-    function handleDownload() {
-        const csvContent = convertToCSV(results);
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-
-        // --- THIS IS THE MODIFIED PART ---
-        // Remove the .csv extension from the original filename
-        const baseName = inputFilename.endsWith('.csv') 
-            ? inputFilename.slice(0, -4) 
-            : inputFilename;
-        
-        // Create the new filename
-        const downloadFilename = `${baseName}_results.csv`;
-
-        link.setAttribute("download", downloadFilename);
-        // --- END OF MODIFIED PART ---
-
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function displayRow(index) {
-        const row = csvData[index];
-        if (!row || row.length < 3) {
-            alert(`Error: Row ${index + 2} in your CSV is malformed. Stopping here.`);
-            showResults();
-            return;
+            if (currentIndex < csvData.length) {
+                displayRow(currentIndex);
+            } else {
+                showResults();
+            }
         }
 
-        promptText.textContent = row[0];
-        responseAText.textContent = row[1];
-        responseBText.textContent = row[2];
-        progressIndicator.textContent = `Comparing Row ${index + 1} of ${csvData.length}`;
-        preferenceForm.reset();
-    }
-    
-    function showResults() {
-        mainContent.style.display = 'none';
-        resultsSection.style.display = 'block';
-        
-        if (results.length > 0) {
-             resultsCsvTextarea.value = convertToCSV(results);
-        } else {
-            resultsCsvTextarea.value = "No results were saved. Please try uploading your file again.";
-        }
-    }
+        function handleDownload() {
+            const csvContent = convertToCSV(results);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
 
-    function convertToCSV(data) {
-        const header = ['prompt', 'response_a', 'response_b', 'winner'];
-        const rows = data.map(row => 
-            header.map(fieldName => `"${String(row[fieldName]).replace(/"/g, '""')}"`).join(',')
-        );
-        return [header.join(','), ...rows].join('\r\n');
-    }
-
-    function parseCSV(str) {
-        const arr = [];
-        let quote = false;
-        let row = 0, col = 0;
-        arr[row] = [];
-
-        for (let c = 0; c < str.length; c++) {
-            let cc = str[c], nc = str[c+1];
-            arr[row] = arr[row] || [];
-            arr[row][col] = arr[row][col] || '';
-
-            if (cc == '"' && !quote) { quote = true; continue; }
-            if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
-            if (cc == '"' && quote) { quote = false; continue; }
-            if (cc == ',' && !quote) { ++col; continue; }
-            if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
-            if (cc == '\n' && !quote) { ++row; col = 0; continue; }
-            if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+            const baseName = inputFilename.endsWith('.csv') 
+                ? inputFilename.slice(0, -4) 
+                : inputFilename;
             
-            arr[row][col] += cc;
+            const downloadFilename = `${baseName}_results.csv`;
+
+            link.setAttribute("download", downloadFilename);
+
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
-        if (arr[arr.length - 1].length === 1 && arr[arr.length - 1][0] === '') {
-             arr.pop();
+
+        function displayRow(index) {
+            const row = csvData[index];
+            if (!row || row.length < 3) {
+                alert(`Error: Row ${index + 2} in your CSV is malformed. Stopping here.`);
+                showResults();
+                return;
+            }
+
+            promptText.textContent = row[0];
+            responseAText.textContent = row[1];
+            responseBText.textContent = row[2];
+            progressIndicator.textContent = `Comparing Row ${index + 1} of ${csvData.length}`;
+            preferenceForm.reset();
         }
-        return arr;
-    }
-</script>
+        
+        function showResults() {
+            mainContent.style.display = 'none';
+            resultsSection.style.display = 'block';
+            
+            if (results.length > 0) {
+                 resultsCsvTextarea.value = convertToCSV(results);
+            } else {
+                resultsCsvTextarea.value = "No results were saved. Please try uploading your file again.";
+            }
+        }
+
+        function convertToCSV(data) {
+            const header = ['prompt', 'response_a', 'response_b', 'winner'];
+            const rows = data.map(row => 
+                header.map(fieldName => `"${String(row[fieldName]).replace(/"/g, '""')}"`).join(',')
+            );
+            return [header.join(','), ...rows].join('\r\n');
+        }
+
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let row = 0, col = 0;
+            arr[row] = [];
+
+            for (let c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+
+                if (cc == '"' && !quote) { quote = true; continue; }
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+                if (cc == '"' && quote) { quote = false; continue; }
+                if (cc == ',' && !quote) { ++col; continue; }
+                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+                
+                arr[row][col] += cc;
+            }
+            if (arr[arr.length - 1].length === 1 && arr[arr.length - 1][0] === '') {
+                 arr.pop();
+            }
+            return arr;
+        }
+    </script>
 </body>
 </html>
