@@ -216,6 +216,7 @@
         let inputFilename = ''; 
 
         // --- DOM element references ---
+        const mainTitle = document.querySelector('h1'); // ADDED: Reference to the main title
         const questionnaireSection = document.getElementById('questionnaire-section');
         const phqForm = document.getElementById('phq-form');
         const disallowedSection = document.getElementById('disallowed-section');
@@ -233,14 +234,14 @@
         const resultsCsvTextarea = document.getElementById('results-csv');
 
         // --- Event Listeners ---
-        phqForm.addEventListener('submit', handleQuestionnaireSubmit); // New listener for the questionnaire
+        phqForm.addEventListener('submit', handleQuestionnaireSubmit); 
         fileInput.addEventListener('change', handleFileSelect);
         submitButton.addEventListener('click', handleSubmission);
         downloadButton.addEventListener('click', handleDownload);
 
         // --- Functions ---
         function handleQuestionnaireSubmit(event) {
-            event.preventDefault(); // Prevent page reload
+            event.preventDefault(); 
             let totalScore = 0;
             const checkedRadios = phqForm.querySelectorAll('input[type="radio"]:checked');
 
@@ -248,14 +249,12 @@
                 totalScore += parseInt(radio.value, 10);
             });
             
-            // Hide the questionnaire
             questionnaireSection.style.display = 'none';
 
             if (totalScore >= 5) {
-                // Show the disallowed message
                 disallowedSection.style.display = 'block';
             } else {
-                // Show the file uploader
+                mainTitle.textContent = 'Response Comparison Tool'; // ADDED: Update the title
                 uploaderSection.style.display = 'block';
             }
         }
@@ -340,7 +339,7 @@
             mainContent.style.display = 'none';
             resultsSection.style.display = 'block';
             if (results.length > 0) {
-                 resultsCsvTextarea.value = convertToCSV(results);
+                resultsCsvTextarea.value = convertToCSV(results);
             } else {
                 resultsCsvTextarea.value = "No results were saved. Please try uploading your file again.";
             }
@@ -372,7 +371,7 @@
                 arr[row][col] += cc;
             }
             if (arr[arr.length - 1].length === 1 && arr[arr.length - 1][0] === '') {
-                 arr.pop();
+                arr.pop();
             }
             return arr;
         }
